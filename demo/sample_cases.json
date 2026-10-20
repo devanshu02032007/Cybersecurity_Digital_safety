@@ -1,0 +1,32 @@
+[
+  {
+    "message": "URGENT: Your bank account is suspended. Verify your account now and share OTP!",
+    "url": "http://192.168.1.10/login",
+    "malicious": true
+  },
+  {
+    "message": "Claim your gift card now!!! click here to receive payout",
+    "url": "https://bit.ly/reward",
+    "malicious": true
+  },
+  {
+    "message": "Team meeting moved to 3 PM. Please join using the internal calendar link.",
+    "url": "https://intranet.company.local/meeting",
+    "malicious": false
+  },
+  {
+    "message": "Invoice reminder for your subscription, please review in your official dashboard.",
+    "url": "https://example.com/billing",
+    "malicious": false
+  },
+  {
+    "message": "Act now to secure your crypto wallet password and transfer funds immediately.",
+    "url": "http://secure-wallet.example.net@malicious.com",
+    "malicious": true
+  },
+  {
+    "message": "Your parcel is delayed. Update delivery preference if needed.",
+    "url": "https://courier.example.org/track",
+    "malicious": false
+  }
+]
