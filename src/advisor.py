@@ -123,17 +123,27 @@ class ExecuTorchLlamaGenerator:
         if self._runner is not None:
             return self._runner
 
-        # Import the installed, model-specific generation implementation only
-        # when advice is requested; the scanners remain usable without it.
-        from types import SimpleNamespace
-        from executorch.examples.models.llama.runner.native import NativeLlamaRunner
-
         pte = self.model_dir / "Llama-3.2-1B-Instruct-QLORA_INT4_EO8.pte"
         params = self.model_dir / "params.json"
         tokenizer = self.model_dir / "tokenizer.model"
-        for path in (pte, params, tokenizer):
+        config = self.model_dir / "config.json"
+        for path in (pte, params, tokenizer, config):
             if not path.is_file():
                 raise FileNotFoundError(f"Required local Llama file is missing: {path}")
+
+        # Import the model-specific runtime only when advice is requested.
+        # Detector inference remains available when ExecuTorch dependencies
+        # are missing or incompatible.
+        from types import SimpleNamespace
+        from executorch.examples.models.llama.runner.native import NativeLlamaRunner
+
+        try:
+            json.loads(params.read_text(encoding="utf-8"))
+            json.loads(config.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise ValueError(
+                "Local Llama configuration is unreadable or invalid"
+            ) from exc
 
         args = SimpleNamespace(
             pte=str(pte),
@@ -170,6 +180,11 @@ class LlamaAdvisor:
         self._generator = generator
 
     def explain(self, detection_result: Mapping[str, Any]) -> str:
+        return self.explain_with_status(detection_result)[0]
+
+    def explain_with_status(
+        self, detection_result: Mapping[str, Any]
+    ) -> tuple[str, bool, str | None]:
         safe = _safe_result(detection_result)
         try:
             generator = self._generator
@@ -180,9 +195,10 @@ class LlamaAdvisor:
             generated = generator(prompt, max_new_tokens=MAX_NEW_TOKENS).strip()
             if not generated:
                 raise ValueError("Llama returned an empty response")
-            return generated[:MAX_RESPONSE_CHARS]
-        except Exception:
-            return _fallback(safe)
+            return generated[:MAX_RESPONSE_CHARS], True, None
+        except Exception as exc:
+            # Expose only the exception type, never model paths or input data.
+            return _fallback(safe), False, type(exc).__name__
 
 
 _default_advisor = LlamaAdvisor()
@@ -191,3 +207,10 @@ _default_advisor = LlamaAdvisor()
 def explain_detection(detection_result: Mapping[str, Any]) -> str:
     """Convenience interface accepting a structured scanner result."""
     return _default_advisor.explain(detection_result)
+
+
+def explain_detection_with_status(
+    detection_result: Mapping[str, Any],
+) -> tuple[str, bool, str | None]:
+    """Return advice plus whether local Llama generated it."""
+    return _default_advisor.explain_with_status(detection_result)

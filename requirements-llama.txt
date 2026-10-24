@@ -1,0 +1,6 @@
+# Optional local-advisor runtime. Install only after validating compatible
+# Linux/Python wheels and the matching ExecuTorch custom-op binaries.
+# The current environment lacks torch, which NativeLlamaRunner imports.
+executorch==1.5.1
+sentencepiece==0.2.2
+pytorch_tokenizers==1.5.0
